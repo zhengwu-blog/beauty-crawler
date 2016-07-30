@@ -5,7 +5,7 @@ import re
 import urllib2
 from PIL import Image
 
-num=77
+num=1
 
 for i in xrange(1,51):
 	url='https://tuchong.com/tags/%E7%BE%8E%E5%A5%B3/?type=new&page='+str(i)
