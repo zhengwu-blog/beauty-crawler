@@ -1,5 +1,6 @@
 require 'nn'
 require 'image'
+require 'optim'
 
 train_size = 10665 
 test_size = 1185
@@ -24,7 +25,7 @@ end
 
 for j = 5564,10665 do
 	trainset.data[j] = image.load('/Users/Dandy/beauty-crawler/dataset/trainset/ugly/'.. j-5563 ..'.png',3,'double')
-	trainset.labels[j] = 0
+	trainset.labels[j] = -1
 end
 
 for m = 1,618 do
@@ -34,8 +35,10 @@ end
 
 for n = 619,1185 do
 	testset.data[n] = image.load('/Users/Dandy/beauty-crawler/dataset/testset/ugly/'.. n-618 ..'.png',3,'double')
-	testset.labels[n] = 0
+	testset.labels[n] = -1
 end
+
+trainset.data = trainset.data:double()
 
 --preprocess the data
 mean = {}
@@ -67,20 +70,21 @@ net:add(nn.ReLU())
 net:add(nn.Linear(240,24))
 net:add(nn.ReLU())
 
-net:add(nn.Linear(24,2))
+net:add(nn.Linear(24,1))
 net:add(nn.Tanh())
+
 
 --define loss function
 criterion = nn.MSECriterion()
 
+--training
+
 for i = 1,train_size do
-	local input = trainset.data[i]
-	local output = net:forward(input)
 	net:zeroGradParameters()
-	criterion:forward(output,trainset.labels[i])
-	gradients = criterion:backward(output,trainset.labels[i])
-	net:backward(input, gradients)
-	net:updateParameters(0.001)
+	pred = net:forward(trainset.data[i])
+	local gradCriterion = criterion:backward(pred, trainset.labels[i])
+	net:backward(trainset.data[i],gradCriterion)
+	net:updateParameters(0.01)
 end
 
 --test the net and print accuracy
@@ -92,11 +96,16 @@ end
 correct = 0
 for i = 1,test_size do
 	local prediction = net:forward(testset.data[i])
+	print (prediction)
 	local groundtruth = testset.labels[i]
-	if groundtruth==1 and prediction>0.5 or groundtruth==0 and prediction<0.5 then 
+	--print (groundtruth)
+	if groundtruth[1]*prediction[1]>0 then 
 		correct = correct+1
 	end
+
 end
 
-print ('accuracy: ' .. 100*correct/10000 .. ' % ')
+print (correct)
+
+print ('accuracy: ' .. correct/test_size*100 .. ' % ')
 
